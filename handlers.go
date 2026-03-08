@@ -128,30 +128,10 @@ func (a *app) handleTree(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) render(w http.ResponseWriter, name string, data interface{}) {
-	// We need to execute the layout template, which invokes the named content template.
-	// Clone the template set so we can define "content" dynamically.
-	tmpl, err := a.templates.Clone()
-	if err != nil {
-		http.Error(w, "template error", http.StatusInternalServerError)
-		log.Printf("template clone error: %v", err)
-		return
-	}
-
-	// The named template (e.g., note.html) defines {{define "content"}}...{{end}}.
-	// It's already parsed in the template set, so we just need to make sure
-	// the right "content" block is available when we execute layout.html.
-
-	// Execute the specific page template first to register its "content" definition,
-	// then execute the layout.
-	// Actually, since all templates are parsed together, we need a different approach:
-	// Execute layout.html which calls {{template "content" .}}, and the last-parsed
-	// definition of "content" wins. We parse the page template after layout.
-
-	// Simpler approach: re-parse layout + the specific page template.
-	tmpl, err = template.ParseFS(templateFS, "templates/layout.html", "templates/"+name)
-	if err != nil {
-		http.Error(w, "template error", http.StatusInternalServerError)
-		log.Printf("template parse error: %v", err)
+	tmpl, ok := a.pages[name]
+	if !ok {
+		http.Error(w, "unknown page", http.StatusInternalServerError)
+		log.Printf("no pre-parsed template for %s", name)
 		return
 	}
 

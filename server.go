@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -19,7 +20,7 @@ var staticFS embed.FS
 type app struct {
 	vaultRoot string
 	vaultName string
-	templates *template.Template
+	pages     map[string]*template.Template // pre-parsed layout+page pairs
 	md        goldmark.Markdown
 	noteIndex map[string]string
 	fileIndex map[string]string
@@ -37,16 +38,24 @@ func serve(vaultRoot, addr string) error {
 		fileIndex: fileIndex,
 	}
 
-	tmpl, err := template.ParseFS(templateFS, "templates/*.html")
-	if err != nil {
-		return err
+	// Pre-parse each page template paired with the layout once at startup.
+	pageNames := []string{"landing.html", "note.html"}
+	a.pages = make(map[string]*template.Template, len(pageNames))
+	for _, name := range pageNames {
+		t, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+name)
+		if err != nil {
+			return fmt.Errorf("parsing template %s: %w", name, err)
+		}
+		a.pages[name] = t
 	}
-	a.templates = tmpl
 
 	mux := http.NewServeMux()
 
 	// Static files
-	staticSub, _ := fs.Sub(staticFS, "static")
+	staticSub, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		return fmt.Errorf("static fs: %w", err)
+	}
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticSub))))
 
 	// API

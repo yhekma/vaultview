@@ -124,7 +124,17 @@ func (r *calloutRenderer) renderBlockquote(w util.BufWriter, source []byte, node
 		return ast.WalkContinue, nil
 	}
 
-	calloutType := string(calloutTypeAttr.([]byte))
+	ctBytes, ok := calloutTypeAttr.([]byte)
+	if !ok {
+		// Attribute exists but wrong type — fall back to regular blockquote
+		if entering {
+			w.WriteString("<blockquote>\n")
+		} else {
+			w.WriteString("</blockquote>\n")
+		}
+		return ast.WalkContinue, nil
+	}
+	calloutType := string(ctBytes)
 	icon := calloutIcons[calloutType]
 	if icon == "" {
 		icon = "📝"
@@ -132,7 +142,10 @@ func (r *calloutRenderer) renderBlockquote(w util.BufWriter, source []byte, node
 
 	if entering {
 		titleAttr, _ := bq.AttributeString("data-callout-title")
-		title := string(titleAttr.([]byte))
+		title := ""
+		if tb, ok := titleAttr.([]byte); ok {
+			title = string(tb)
+		}
 		fmt.Fprintf(w, "<div class=\"callout callout-%s\">\n", calloutType)
 		fmt.Fprintf(w, "<div class=\"callout-title\">%s %s</div>\n", icon, title)
 		w.WriteString("<div class=\"callout-content\">\n")
