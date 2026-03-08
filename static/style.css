@@ -1,0 +1,81 @@
+/* Transition for tree arrows */
+.tree-arrow {
+    display: inline-block;
+    transition: transform 0.15s ease;
+    font-size: 0.6rem;
+}
+.rotate-90 {
+    transform: rotate(90deg);
+}
+
+/* Prose styling (since we can't use @tailwindcss/typography plugin via CDN script easily) */
+.prose { line-height: 1.75; }
+.prose h1 { font-size: 2em; font-weight: 700; margin-top: 0; margin-bottom: 0.8em; padding-bottom: 0.3em; border-bottom: 1px solid #e5e7eb; }
+.prose h2 { font-size: 1.5em; font-weight: 600; margin-top: 1.8em; margin-bottom: 0.6em; padding-bottom: 0.25em; border-bottom: 1px solid #f3f4f6; }
+.prose h3 { font-size: 1.25em; font-weight: 600; margin-top: 1.5em; margin-bottom: 0.4em; }
+.prose h4 { font-size: 1.1em; font-weight: 600; margin-top: 1.3em; margin-bottom: 0.4em; }
+.prose p { margin-top: 0.8em; margin-bottom: 0.8em; }
+.prose a { color: #2563eb; text-decoration: underline; }
+.prose a:hover { color: #1d4ed8; }
+.prose strong { font-weight: 600; }
+.prose ul { list-style-type: disc; padding-left: 1.5em; margin-top: 0.5em; margin-bottom: 0.5em; }
+.prose ol { list-style-type: decimal; padding-left: 1.5em; margin-top: 0.5em; margin-bottom: 0.5em; }
+.prose li { margin-top: 0.25em; margin-bottom: 0.25em; }
+.prose blockquote { border-left: 4px solid #d1d5db; padding-left: 1em; margin-left: 0; color: #6b7280; font-style: italic; }
+.prose code { background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 0.25em; font-size: 0.875em; }
+.prose pre { background: #282a36; color: #f8f8f2; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin: 1em 0; }
+.prose pre code { background: none; padding: 0; color: inherit; font-size: 0.85em; }
+.prose table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+.prose th, .prose td { border: 1px solid #d1d5db; padding: 0.5em 0.75em; text-align: left; }
+.prose th { background: #f9fafb; font-weight: 600; }
+.prose img { max-width: 100%; height: auto; border-radius: 0.5em; margin: 1em 0; }
+.prose hr { border: none; border-top: 1px solid #e5e7eb; margin: 2em 0; }
+
+/* Task list styling */
+.prose ul li input[type="checkbox"] { margin-right: 0.5em; }
+
+/* Wikilinks */
+.wikilink { color: #7c3aed; text-decoration: none; border-bottom: 1px dashed #7c3aed; }
+.wikilink:hover { color: #6d28d9; border-bottom-style: solid; }
+
+/* Tags */
+.tag { display: inline-block; background: #ede9fe; color: #6d28d9; padding: 0.1em 0.5em; border-radius: 9999px; font-size: 0.8em; font-weight: 500; text-decoration: none; }
+
+/* Embeds */
+.embed-note { border-left: 4px solid #7c3aed; background: #faf5ff; padding: 0.75em 1em; margin: 1em 0; border-radius: 0 0.5em 0.5em 0; font-style: normal; }
+.embed-image { max-width: 100%; border-radius: 0.5em; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.embed-video { max-width: 100%; border-radius: 0.5em; }
+.embed-pdf { border: 1px solid #e5e7eb; border-radius: 0.5em; }
+
+/* Callouts */
+.callout { border-radius: 0.5em; padding: 0; margin: 1em 0; overflow: hidden; border: 1px solid; }
+.callout-title { padding: 0.6em 1em; font-weight: 600; font-size: 0.95em; }
+.callout-content { padding: 0.5em 1em; }
+.callout-content > *:first-child { margin-top: 0; }
+
+.callout-note { border-color: #93c5fd; background: #eff6ff; }
+.callout-note .callout-title { background: #dbeafe; color: #1e40af; }
+.callout-info { border-color: #93c5fd; background: #eff6ff; }
+.callout-info .callout-title { background: #dbeafe; color: #1e40af; }
+.callout-tip, .callout-hint { border-color: #86efac; background: #f0fdf4; }
+.callout-tip .callout-title, .callout-hint .callout-title { background: #dcfce7; color: #166534; }
+.callout-warning, .callout-caution, .callout-attention { border-color: #fcd34d; background: #fffbeb; }
+.callout-warning .callout-title, .callout-caution .callout-title, .callout-attention .callout-title { background: #fef3c7; color: #92400e; }
+.callout-danger, .callout-error { border-color: #fca5a5; background: #fef2f2; }
+.callout-danger .callout-title, .callout-error .callout-title { background: #fee2e2; color: #991b1b; }
+.callout-success, .callout-check, .callout-done { border-color: #86efac; background: #f0fdf4; }
+.callout-success .callout-title, .callout-check .callout-title, .callout-done .callout-title { background: #dcfce7; color: #166534; }
+.callout-question, .callout-help, .callout-faq { border-color: #c4b5fd; background: #f5f3ff; }
+.callout-question .callout-title, .callout-help .callout-title, .callout-faq .callout-title { background: #ede9fe; color: #5b21b6; }
+.callout-bug { border-color: #fca5a5; background: #fef2f2; }
+.callout-bug .callout-title { background: #fee2e2; color: #991b1b; }
+.callout-example { border-color: #a78bfa; background: #f5f3ff; }
+.callout-example .callout-title { background: #ede9fe; color: #5b21b6; }
+.callout-quote, .callout-cite { border-color: #d1d5db; background: #f9fafb; }
+.callout-quote .callout-title, .callout-cite .callout-title { background: #f3f4f6; color: #374151; }
+.callout-abstract, .callout-summary, .callout-todo { border-color: #67e8f9; background: #ecfeff; }
+.callout-abstract .callout-title, .callout-summary .callout-title, .callout-todo .callout-title { background: #cffafe; color: #155e75; }
+.callout-important { border-color: #fca5a5; background: #fef2f2; }
+.callout-important .callout-title { background: #fee2e2; color: #991b1b; }
+.callout-failure, .callout-fail, .callout-missing { border-color: #fca5a5; background: #fef2f2; }
+.callout-failure .callout-title, .callout-fail .callout-title, .callout-missing .callout-title { background: #fee2e2; color: #991b1b; }

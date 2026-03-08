@@ -1,0 +1,21 @@
+{{define "content"}}
+{{if .Frontmatter}}
+<details class="mb-6 bg-gray-100 rounded-lg border border-gray-200">
+    <summary class="px-4 py-2 text-sm font-medium text-gray-600 cursor-pointer hover:text-gray-800">Properties</summary>
+    <div class="px-4 pb-3">
+        <table class="text-sm w-full">
+            {{range $key, $val := .Frontmatter}}
+            <tr class="border-b border-gray-200 last:border-0">
+                <td class="py-1.5 pr-4 font-medium text-gray-500 align-top">{{$key}}</td>
+                <td class="py-1.5 text-gray-700">{{$val}}</td>
+            </tr>
+            {{end}}
+        </table>
+    </div>
+</details>
+{{end}}
+
+<article class="prose prose-gray max-w-none">
+    {{.Content}}
+</article>
+{{end}}

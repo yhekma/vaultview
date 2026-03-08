@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} — VaultView</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    typography: {
+                        DEFAULT: {
+                            css: {
+                                maxWidth: 'none',
+                            },
+                        },
+                    },
+                },
+            },
+            plugins: [],
+        }
+    </script>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad: true, theme: 'neutral'});</script>
+</head>
+<body class="bg-gray-50 text-gray-900 h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-72 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
+        <div class="p-4 border-b border-gray-200">
+            <a href="/" class="text-lg font-semibold text-gray-800 hover:text-blue-600 no-underline">{{.VaultName}}</a>
+        </div>
+        <div class="p-3 border-b border-gray-200">
+            <input type="text" id="tree-filter" placeholder="Filter notes..."
+                   class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <nav id="file-tree" class="flex-1 overflow-y-auto p-2 text-sm">
+            <div class="text-gray-400 p-2">Loading...</div>
+        </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 overflow-y-auto">
+        <div class="max-w-4xl mx-auto px-8 py-8">
+            {{template "content" .}}
+        </div>
+    </main>
+
+    <script>
+    // File tree rendering
+    async function loadTree() {
+        const resp = await fetch('/api/tree');
+        const tree = await resp.json();
+        const container = document.getElementById('file-tree');
+        container.innerHTML = '';
+        renderNodes(tree, container, 0);
+        setupFilter();
+    }
+
+    function renderNodes(nodes, parent, depth) {
+        for (const node of nodes) {
+            if (node.isDir) {
+                const folder = document.createElement('div');
+                folder.className = 'tree-folder';
+                folder.dataset.path = node.path;
+
+                const toggle = document.createElement('div');
+                toggle.className = 'flex items-center gap-1 px-2 py-1 rounded cursor-pointer hover:bg-gray-100 text-gray-600';
+                toggle.style.paddingLeft = (depth * 12 + 8) + 'px';
+                toggle.innerHTML = `<span class="tree-arrow text-xs transition-transform">&#9654;</span><span>📁</span><span class="truncate">${node.name}</span>`;
+
+                const children = document.createElement('div');
+                children.className = 'hidden';
+
+                toggle.addEventListener('click', () => {
+                    children.classList.toggle('hidden');
+                    toggle.querySelector('.tree-arrow').classList.toggle('rotate-90');
+                });
+
+                folder.appendChild(toggle);
+                folder.appendChild(children);
+                parent.appendChild(folder);
+                renderNodes(node.children, children, depth + 1);
+            } else {
+                if (!node.name.endsWith('.md')) continue;
+                const link = document.createElement('a');
+                const viewPath = node.path.replace(/\.md$/, '');
+                link.href = '/view/' + encodeURIComponent(viewPath).replace(/%2F/g, '/');
+                link.className = 'tree-file flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50 text-gray-700 hover:text-blue-600 no-underline block';
+                link.style.paddingLeft = (depth * 12 + 8) + 'px';
+                link.dataset.name = node.name.toLowerCase();
+                const displayName = node.name.replace(/\.md$/, '');
+                link.innerHTML = `<span class="truncate">${displayName}</span>`;
+                parent.appendChild(link);
+            }
+        }
+    }
+
+    function setupFilter() {
+        const input = document.getElementById('tree-filter');
+        input.addEventListener('input', () => {
+            const q = input.value.toLowerCase();
+            document.querySelectorAll('.tree-file').forEach(el => {
+                const match = el.dataset.name.includes(q);
+                el.style.display = match ? '' : 'none';
+            });
+            // Show all folders when filtering, hide empty ones
+            document.querySelectorAll('.tree-folder').forEach(folder => {
+                const children = folder.querySelector('div:last-child');
+                if (q) {
+                    children.classList.remove('hidden');
+                    folder.querySelector('.tree-arrow').classList.add('rotate-90');
+                    const hasVisible = children.querySelector('.tree-file:not([style*="display: none"])');
+                    const hasVisibleFolder = children.querySelector('.tree-folder:not([style*="display: none"])');
+                    folder.style.display = (hasVisible || hasVisibleFolder) ? '' : 'none';
+                } else {
+                    folder.style.display = '';
+                }
+            });
+        });
+    }
+
+    // Highlight active note
+    const currentPath = window.location.pathname;
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTree().then(() => {
+            document.querySelectorAll('.tree-file').forEach(el => {
+                if (el.getAttribute('href') === currentPath) {
+                    el.classList.add('bg-blue-50', 'text-blue-700', 'font-medium');
+                    // Expand parent folders
+                    let parent = el.parentElement;
+                    while (parent) {
+                        if (parent.classList && parent.classList.contains('hidden')) {
+                            parent.classList.remove('hidden');
+                            const arrow = parent.previousElementSibling?.querySelector('.tree-arrow');
+                            if (arrow) arrow.classList.add('rotate-90');
+                        }
+                        parent = parent.parentElement;
+                    }
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>
