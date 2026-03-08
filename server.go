@@ -39,9 +39,22 @@ func serve(vaultRoot, addr string) error {
 	}
 
 	// Pre-parse each page template paired with the layout once at startup.
-	pageNames := []string{"landing.html", "note.html"}
-	a.pages = make(map[string]*template.Template, len(pageNames))
-	for _, name := range pageNames {
+	// Auto-discover all page templates from the embedded filesystem.
+	entries, err := fs.ReadDir(templateFS, "templates")
+	if err != nil {
+		return fmt.Errorf("reading template directory: %w", err)
+	}
+
+	a.pages = make(map[string]*template.Template)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		// Skip the layout itself, only parse page templates
+		if name == "layout.html" || filepath.Ext(name) != ".html" {
+			continue
+		}
 		t, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+name)
 		if err != nil {
 			return fmt.Errorf("parsing template %s: %w", name, err)
