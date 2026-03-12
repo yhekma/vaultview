@@ -213,7 +213,13 @@
             el.classList.add('canvas-node-link');
             var header = document.createElement('div');
             header.className = 'canvas-node-header';
-            header.innerHTML = '<a href="' + escapeHtml(n.url || '') + '" target="_blank" rel="noopener">' + escapeHtml(n.url || '') + '</a>';
+            var safeUrl = isSafeUrl(n.url || '') ? n.url : '#';
+            var linkEl = document.createElement('a');
+            linkEl.href = safeUrl;
+            linkEl.target = '_blank';
+            linkEl.rel = 'noopener';
+            linkEl.textContent = n.url || '';
+            header.appendChild(linkEl);
             el.appendChild(header);
         }
 
@@ -271,7 +277,7 @@
             path.setAttribute('stroke', e.color ? resolveColor(e.color) : 'var(--text-faint)');
             path.setAttribute('stroke-width', '2');
             path.setAttribute('fill', 'none');
-            if (e.fromEnd !== 'none' && e.toEnd !== 'none') {
+            if (e.toEnd !== 'none') {
                 path.setAttribute('marker-end', 'url(#arrowhead)');
             }
             svgEl.appendChild(path);
@@ -307,6 +313,15 @@
             '4': '#44cf6e', '5': '#53dfdd', '6': '#a882ff'
         };
         return palette[c] || c;
+    }
+
+    function isSafeUrl(url) {
+        try {
+            var parsed = new URL(url, window.location.href);
+            return ['http:', 'https:', 'mailto:'].indexOf(parsed.protocol) !== -1;
+        } catch (e) {
+            return false;
+        }
     }
 
     function escapeHtml(s) {

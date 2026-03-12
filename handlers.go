@@ -114,7 +114,7 @@ func (a *app) handleCanvasView(w http.ResponseWriter, cleanPath string, source [
 	data := map[string]interface{}{
 		"Title":      title,
 		"VaultName":  a.vaultName,
-		"CanvasJSON": string(raw),
+		"CanvasJSON": template.JS(raw),
 	}
 
 	a.render(w, "canvas.html", data)
