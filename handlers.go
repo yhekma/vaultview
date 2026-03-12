@@ -43,7 +43,7 @@ func (a *app) handleView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Try .canvas first, then .md, then as-is
+	// Try .md first, then .canvas
 	var fullPath string
 	var fileExt string
 	for _, ext := range []string{".md", ".canvas"} {

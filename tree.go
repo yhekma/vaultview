@@ -127,7 +127,8 @@ func buildNoteIndex(vaultRoot string) map[string]string {
 		case ".md":
 			name = strings.TrimSuffix(info.Name(), ".md")
 		case ".canvas":
-			name = info.Name() // keep .canvas extension as key
+			// Normalize extension to lowercase for consistent wikilink matching
+			name = strings.TrimSuffix(info.Name(), filepath.Ext(info.Name())) + ".canvas"
 		default:
 			return nil
 		}
