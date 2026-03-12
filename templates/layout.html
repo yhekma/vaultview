@@ -124,15 +124,17 @@
             } else {
                 if (!node.name.endsWith('.md') && !node.name.endsWith('.canvas')) continue;
                 const link = document.createElement('a');
-                const viewPath = node.path.replace(/\.(md|canvas)$/, '');
+                // Strip .md from URL (Obsidian convention) but keep .canvas
+                const viewPath = node.name.endsWith('.canvas')
+                    ? node.path
+                    : node.path.replace(/\.md$/, '');
                 link.href = '/view/' + encodeURIComponent(viewPath).replace(/%2F/g, '/');
                 link.className = 'tree-file flex items-center gap-1 px-2 py-1 rounded no-underline block';
                 link.style.paddingLeft = (depth * 12 + 8) + 'px';
                 link.dataset.name = node.name.toLowerCase();
-                const displayName = node.name.replace(/\.(md|canvas)$/, '');
                 const fileNameSpan = document.createElement('span');
                 fileNameSpan.className = 'truncate';
-                fileNameSpan.textContent = displayName;
+                fileNameSpan.textContent = node.name;
                 link.appendChild(fileNameSpan);
                 parent.appendChild(link);
             }

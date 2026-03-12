@@ -105,8 +105,10 @@ func scanDir(dir, vaultRoot string) ([]*TreeNode, error) {
 	return nodes, nil
 }
 
-// buildNoteIndex creates a map from note name (without .md) to relative path
-// for resolving wikilinks. If multiple notes share a name, shortest path wins.
+// buildNoteIndex creates a map from note name to relative path for resolving
+// wikilinks. Markdown files are keyed without .md extension (Obsidian convention).
+// Canvas files are keyed with .canvas extension (e.g. "My Canvas.canvas").
+// If multiple notes share a name, shortest path wins.
 func buildNoteIndex(vaultRoot string) map[string]string {
 	index := make(map[string]string)
 	filepath.Walk(vaultRoot, func(path string, info os.FileInfo, err error) error {
@@ -119,11 +121,17 @@ func buildNoteIndex(vaultRoot string) map[string]string {
 			}
 			return nil
 		}
-		if strings.ToLower(filepath.Ext(path)) != ".md" {
+		ext := strings.ToLower(filepath.Ext(path))
+		var name string
+		switch ext {
+		case ".md":
+			name = strings.TrimSuffix(info.Name(), ".md")
+		case ".canvas":
+			name = info.Name() // keep .canvas extension as key
+		default:
 			return nil
 		}
 		rel, _ := filepath.Rel(vaultRoot, path)
-		name := strings.TrimSuffix(info.Name(), ".md")
 		if existing, ok := index[name]; !ok || len(rel) < len(existing) {
 			index[name] = rel
 		}
