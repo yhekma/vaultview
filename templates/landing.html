@@ -1,10 +1,10 @@
 {{define "content"}}
 <div class="text-center py-16">
-    <h1 class="text-3xl font-bold text-gray-800 mb-4">{{.VaultName}}</h1>
-    <p class="text-gray-500 text-lg mb-8">{{.NoteCount}} notes in this vault</p>
-    <div class="inline-block text-left bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-md">
-        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Getting Started</h2>
-        <p class="text-gray-600 text-sm">Browse notes using the sidebar, or use the filter to find a specific note.</p>
+    <h1 class="landing-title text-3xl font-bold mb-4">{{.VaultName}}</h1>
+    <p class="landing-subtitle text-lg mb-8">{{.NoteCount}} notes in this vault</p>
+    <div class="landing-card inline-block text-left p-6 max-w-md">
+        <h2 class="landing-card-title text-sm font-semibold uppercase tracking-wider mb-3">Getting Started</h2>
+        <p class="landing-card-text text-sm">Browse notes using the sidebar, or use the filter to find a specific note.</p>
     </div>
 </div>
 {{end}}
