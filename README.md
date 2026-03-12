@@ -12,11 +12,13 @@ vaultview /path/to/vault
 
 - **File tree sidebar** with collapsible folders and instant filter
 - **Markdown rendering** via [goldmark](https://github.com/yuin/goldmark) with GFM (tables, task lists, strikethrough, autolinks)
-- **Wikilinks** - `[[note]]`, `[[note|alias]]`, `[[note#heading]]` with shortest-path resolution
-- **Embeds** - `![[image.png]]`, `![[video.mp4]]`, `![[note]]` rendered inline
-- **Callouts** - all Obsidian callout types (`> [!tip]`, `> [!warning]`, etc.) with styled rendering
+- **Canvas rendering** — `.canvas` files displayed as interactive pan/zoom diagrams with nodes and edges
+- **Dark mode** — toggle between light and dark themes, persisted in browser localStorage
+- **Wikilinks** — `[[note]]`, `[[note|alias]]`, `[[note#heading]]` with shortest-path resolution
+- **Embeds** — `![[image.png]]`, `![[video.mp4]]`, `![[note]]` rendered inline
+- **Callouts** — all Obsidian callout types (`> [!tip]`, `> [!warning]`, etc.) with styled rendering
 - **Syntax highlighting** for code blocks (Dracula theme, powered by [chroma](https://github.com/alecthomas/chroma))
-- **Mermaid diagrams** rendered client-side
+- **Mermaid diagrams** rendered client-side (theme-aware)
 - **Frontmatter** displayed as a collapsible properties panel
 - **All assets embedded** in the binary via `go:embed` for zero-dependency deployment
 
@@ -70,27 +72,29 @@ Then open `http://localhost:8080` in your browser.
 | GFM tables | Standard table rendering |
 | `- [x] tasks` | Checkbox task lists |
 | `~~strikethrough~~` | Strikethrough text |
+| `.canvas` files | Interactive pan/zoom canvas viewer |
 
 ## Architecture
 
 ```
 Browser
   +-- Sidebar (file tree from /api/tree)
-  +-- Content pane (rendered markdown from /view/{path})
+  +-- Content pane (rendered markdown or canvas from /view/{path})
+  +-- Theme toggle (dark/light, persisted in localStorage)
 
 Go server (net/http)
   GET /              landing page
-  GET /view/{path}   render note as HTML
+  GET /view/{path}   render note (.md) or canvas (.canvas) as HTML
   GET /raw/{path}    serve images/attachments
   GET /api/tree      JSON file tree
   GET /static/       embedded CSS
 ```
 
-Styling uses Tailwind CSS via CDN. Templates and static assets are embedded in the binary.
+Styling uses CSS custom properties for theming with Tailwind CSS utility classes via CDN. Templates and static assets are embedded in the binary.
 
 ## Limitations
 
-- **Read-only** - no editing, no saving
-- **No search** - filter in the sidebar works on filenames only
-- **No plugins** - Dataview, Templater, and other plugin output is not rendered
-- **Local use** - no authentication; not intended for public-facing deployment
+- **Read-only** — no editing, no saving
+- **No search** — filter in the sidebar works on filenames only
+- **No plugins** — Dataview, Templater, and other plugin output is not rendered
+- **Local use** — no authentication; not intended for public-facing deployment
