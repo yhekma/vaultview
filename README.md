@@ -10,11 +10,11 @@ vaultview /path/to/vault
 
 ## Features
 
-- **File tree sidebar** with collapsible folders and instant filter
+- **File tree sidebar** with collapsible folders, file extensions, and instant filter
 - **Markdown rendering** via [goldmark](https://github.com/yuin/goldmark) with GFM (tables, task lists, strikethrough, autolinks)
 - **Canvas rendering** — `.canvas` files displayed as interactive pan/zoom diagrams with nodes and edges
 - **Dark mode** — toggle between light and dark themes, persisted in browser localStorage
-- **Wikilinks** — `[[note]]`, `[[note|alias]]`, `[[note#heading]]` with shortest-path resolution
+- **Wikilinks** — `[[note]]`, `[[note|alias]]`, `[[note#heading]]`, `[[note.canvas]]` with shortest-path resolution
 - **Embeds** — `![[image.png]]`, `![[video.mp4]]`, `![[note]]` rendered inline
 - **Callouts** — all Obsidian callout types (`> [!tip]`, `> [!warning]`, etc.) with styled rendering
 - **Syntax highlighting** for code blocks (Dracula theme, powered by [chroma](https://github.com/alecthomas/chroma))
@@ -63,7 +63,7 @@ Then open `http://localhost:8080` in your browser.
 
 | Obsidian syntax | Support |
 |---|---|
-| `[[wikilinks]]` | Links with alias, heading anchor |
+| `[[wikilinks]]` | Links with alias, heading anchor, canvas references |
 | `![[embeds]]` | Images, video, audio, PDF, note placeholders |
 | `> [!callout]` | All built-in types with icons and colors |
 | `` ```lang `` | Syntax-highlighted code blocks |
