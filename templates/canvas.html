@@ -1,0 +1,409 @@
+{{define "content"}}
+<style>
+    .canvas-container {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 4rem);
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        background: var(--bg-surface-alt);
+        cursor: grab;
+    }
+    .canvas-container.grabbing {
+        cursor: grabbing;
+    }
+    .canvas-viewport {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: 0 0;
+    }
+    .canvas-node {
+        position: absolute;
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        background: var(--bg-surface);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+    }
+    .canvas-node-text {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: var(--text-primary);
+        overflow: auto;
+        flex: 1;
+    }
+    .canvas-node-text .prose {
+        font-size: 0.875rem;
+    }
+    .canvas-node-file {
+        border-color: var(--wikilink-color);
+    }
+    .canvas-node-file .canvas-node-header {
+        background: var(--tag-bg);
+        color: var(--wikilink-color);
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .canvas-node-file .canvas-node-header a {
+        color: inherit;
+        text-decoration: none;
+    }
+    .canvas-node-file .canvas-node-header a:hover {
+        text-decoration: underline;
+    }
+    .canvas-node-link {
+        border-color: var(--link-color);
+    }
+    .canvas-node-link .canvas-node-header {
+        background: var(--bg-active);
+        color: var(--link-color);
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .canvas-node-link .canvas-node-header a {
+        color: inherit;
+        text-decoration: none;
+    }
+    .canvas-node-link .canvas-node-header a:hover {
+        text-decoration: underline;
+    }
+    .canvas-group {
+        position: absolute;
+        border: 2px dashed var(--border-color);
+        border-radius: 0.75rem;
+        background: var(--bg-surface-alt);
+        opacity: 0.5;
+    }
+    .canvas-group-label {
+        position: absolute;
+        top: -1.5rem;
+        left: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        background: var(--bg-main);
+        padding: 0 0.25rem;
+    }
+    .canvas-edge-label {
+        font-size: 0.7rem;
+        fill: var(--text-muted);
+        text-anchor: middle;
+        dominant-baseline: central;
+    }
+    .canvas-controls {
+        position: absolute;
+        bottom: 0.75rem;
+        right: 0.75rem;
+        display: flex;
+        gap: 0.25rem;
+        z-index: 10;
+    }
+    .canvas-controls button {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        border-radius: 0.375rem;
+        width: 2rem;
+        height: 2rem;
+        cursor: pointer;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .canvas-controls button:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+    }
+</style>
+
+<div class="canvas-container" id="canvas-container">
+    <svg id="canvas-edges" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;"></svg>
+    <div class="canvas-viewport" id="canvas-viewport"></div>
+    <div class="canvas-controls">
+        <button onclick="canvasZoom(1.2)" title="Zoom in">+</button>
+        <button onclick="canvasZoom(0.8)" title="Zoom out">&minus;</button>
+        <button onclick="canvasFit()" title="Fit to view">&#8634;</button>
+    </div>
+</div>
+
+<script>
+(function() {
+    var canvasData = {{.CanvasJSON}};
+    var nodes = canvasData.nodes || [];
+    var edges = canvasData.edges || [];
+    var viewport = document.getElementById('canvas-viewport');
+    var container = document.getElementById('canvas-container');
+    var svgEl = document.getElementById('canvas-edges');
+
+    // Transform state
+    var tx = 0, ty = 0, scale = 1;
+
+    // Build node lookup
+    var nodeMap = {};
+    nodes.forEach(function(n) { nodeMap[n.id] = n; });
+
+    // Render groups first (behind nodes)
+    nodes.filter(function(n) { return n.type === 'group'; }).forEach(function(n) {
+        var el = document.createElement('div');
+        el.className = 'canvas-group';
+        el.style.left = n.x + 'px';
+        el.style.top = n.y + 'px';
+        el.style.width = n.width + 'px';
+        el.style.height = n.height + 'px';
+        if (n.color) {
+            el.style.borderColor = resolveColor(n.color);
+            el.style.background = resolveColor(n.color) + '1a';
+        }
+        if (n.label) {
+            var lbl = document.createElement('div');
+            lbl.className = 'canvas-group-label';
+            lbl.textContent = n.label;
+            el.appendChild(lbl);
+        }
+        viewport.appendChild(el);
+    });
+
+    // Render nodes
+    nodes.filter(function(n) { return n.type !== 'group'; }).forEach(function(n) {
+        var el = document.createElement('div');
+        el.className = 'canvas-node';
+        el.style.left = n.x + 'px';
+        el.style.top = n.y + 'px';
+        el.style.width = n.width + 'px';
+        el.style.height = n.height + 'px';
+        el.dataset.id = n.id;
+
+        if (n.color) {
+            el.style.borderColor = resolveColor(n.color);
+        }
+
+        if (n.type === 'text') {
+            var body = document.createElement('div');
+            body.className = 'canvas-node-text';
+            body.innerHTML = simpleMarkdown(n.text || '');
+            el.appendChild(body);
+        } else if (n.type === 'file') {
+            el.classList.add('canvas-node-file');
+            var header = document.createElement('div');
+            header.className = 'canvas-node-header';
+            var filePath = (n.file || '').replace(/\.md$/, '');
+            var fileName = filePath.split('/').pop();
+            header.innerHTML = '<a href="/view/' + encodeURIComponent(filePath).replace(/%2F/g, '/') + '">' + escapeHtml(fileName) + '</a>';
+            el.appendChild(header);
+            var body = document.createElement('div');
+            body.className = 'canvas-node-text';
+            body.style.color = 'var(--text-muted)';
+            body.style.fontStyle = 'italic';
+            body.textContent = n.file || '';
+            el.appendChild(body);
+        } else if (n.type === 'link') {
+            el.classList.add('canvas-node-link');
+            var header = document.createElement('div');
+            header.className = 'canvas-node-header';
+            header.innerHTML = '<a href="' + escapeHtml(n.url || '') + '" target="_blank" rel="noopener">' + escapeHtml(n.url || '') + '</a>';
+            el.appendChild(header);
+        }
+
+        viewport.appendChild(el);
+    });
+
+    // Render edges as SVG
+    function renderEdges() {
+        svgEl.innerHTML = '';
+        var defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        var marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead');
+        marker.setAttribute('markerWidth', '10');
+        marker.setAttribute('markerHeight', '7');
+        marker.setAttribute('refX', '10');
+        marker.setAttribute('refY', '3.5');
+        marker.setAttribute('orient', 'auto');
+        var polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+        polygon.setAttribute('fill', 'var(--text-faint)');
+        marker.appendChild(polygon);
+        defs.appendChild(marker);
+        svgEl.appendChild(defs);
+
+        edges.forEach(function(e) {
+            var from = nodeMap[e.fromNode];
+            var to = nodeMap[e.toNode];
+            if (!from || !to) return;
+
+            var p1 = getEdgePoint(from, e.fromSide || 'right');
+            var p2 = getEdgePoint(to, e.toSide || 'left');
+
+            // Apply viewport transform
+            var x1 = p1.x * scale + tx;
+            var y1 = p1.y * scale + ty;
+            var x2 = p2.x * scale + tx;
+            var y2 = p2.y * scale + ty;
+
+            // Cubic bezier for smooth curves
+            var dx = Math.abs(x2 - x1) * 0.5;
+            var cp1x = x1, cp1y = y1, cp2x = x2, cp2y = y2;
+            var side1 = e.fromSide || 'right';
+            var side2 = e.toSide || 'left';
+            if (side1 === 'right') cp1x = x1 + dx;
+            else if (side1 === 'left') cp1x = x1 - dx;
+            else if (side1 === 'top') cp1y = y1 - dx;
+            else if (side1 === 'bottom') cp1y = y1 + dx;
+            if (side2 === 'left') cp2x = x2 - dx;
+            else if (side2 === 'right') cp2x = x2 + dx;
+            else if (side2 === 'top') cp2y = y2 - dx;
+            else if (side2 === 'bottom') cp2y = y2 + dx;
+
+            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M' + x1 + ',' + y1 + ' C' + cp1x + ',' + cp1y + ' ' + cp2x + ',' + cp2y + ' ' + x2 + ',' + y2);
+            path.setAttribute('stroke', e.color ? resolveColor(e.color) : 'var(--text-faint)');
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('fill', 'none');
+            if (e.fromEnd !== 'none' && e.toEnd !== 'none') {
+                path.setAttribute('marker-end', 'url(#arrowhead)');
+            }
+            svgEl.appendChild(path);
+
+            if (e.label) {
+                var mx = (x1 + x2) / 2;
+                var my = (y1 + y2) / 2;
+                var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', mx);
+                text.setAttribute('y', my - 8);
+                text.setAttribute('class', 'canvas-edge-label');
+                text.textContent = e.label;
+                svgEl.appendChild(text);
+            }
+        });
+    }
+
+    function getEdgePoint(node, side) {
+        var x = node.x, y = node.y, w = node.width, h = node.height;
+        switch (side) {
+            case 'top':    return { x: x + w/2, y: y };
+            case 'bottom': return { x: x + w/2, y: y + h };
+            case 'left':   return { x: x, y: y + h/2 };
+            case 'right':  return { x: x + w, y: y + h/2 };
+            default:       return { x: x + w/2, y: y + h/2 };
+        }
+    }
+
+    // Obsidian uses named colors like "1"-"6" or hex colors
+    function resolveColor(c) {
+        var palette = {
+            '1': '#fb464c', '2': '#e9973f', '3': '#e0de71',
+            '4': '#44cf6e', '5': '#53dfdd', '6': '#a882ff'
+        };
+        return palette[c] || c;
+    }
+
+    function escapeHtml(s) {
+        var div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    function simpleMarkdown(text) {
+        // Basic markdown: bold, italic, links, wikilinks, line breaks
+        var s = escapeHtml(text);
+        s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        s = s.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, function(_, target, alias) {
+            var href = '/view/' + encodeURIComponent(target).replace(/%2F/g, '/');
+            return '<a href="' + href + '" class="wikilink">' + alias + '</a>';
+        });
+        s = s.replace(/\[\[([^\]]+)\]\]/g, function(_, target) {
+            var href = '/view/' + encodeURIComponent(target).replace(/%2F/g, '/');
+            return '<a href="' + href + '" class="wikilink">' + target + '</a>';
+        });
+        s = s.replace(/\n/g, '<br>');
+        return s;
+    }
+
+    // Pan & zoom
+    var isDragging = false, startX = 0, startY = 0, startTx = 0, startTy = 0;
+
+    container.addEventListener('mousedown', function(e) {
+        if (e.target.closest('a')) return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startTx = tx;
+        startTy = ty;
+        container.classList.add('grabbing');
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        tx = startTx + (e.clientX - startX);
+        ty = startTy + (e.clientY - startY);
+        applyTransform();
+    });
+    window.addEventListener('mouseup', function() {
+        isDragging = false;
+        container.classList.remove('grabbing');
+    });
+    container.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var rect = container.getBoundingClientRect();
+        var mx = e.clientX - rect.left;
+        var my = e.clientY - rect.top;
+        var factor = e.deltaY < 0 ? 1.1 : 0.9;
+        // Zoom toward cursor
+        tx = mx - factor * (mx - tx);
+        ty = my - factor * (my - ty);
+        scale *= factor;
+        applyTransform();
+    }, { passive: false });
+
+    function applyTransform() {
+        viewport.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+        renderEdges();
+    }
+
+    window.canvasZoom = function(factor) {
+        var rect = container.getBoundingClientRect();
+        var cx = rect.width / 2;
+        var cy = rect.height / 2;
+        tx = cx - factor * (cx - tx);
+        ty = cy - factor * (cy - ty);
+        scale *= factor;
+        applyTransform();
+    };
+
+    window.canvasFit = function() {
+        if (nodes.length === 0) return;
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        nodes.forEach(function(n) {
+            if (n.x < minX) minX = n.x;
+            if (n.y < minY) minY = n.y;
+            if (n.x + n.width > maxX) maxX = n.x + n.width;
+            if (n.y + n.height > maxY) maxY = n.y + n.height;
+        });
+        var rect = container.getBoundingClientRect();
+        var pad = 40;
+        var cw = maxX - minX;
+        var ch = maxY - minY;
+        scale = Math.min((rect.width - pad * 2) / cw, (rect.height - pad * 2) / ch, 2);
+        tx = (rect.width - cw * scale) / 2 - minX * scale;
+        ty = (rect.height - ch * scale) / 2 - minY * scale;
+        applyTransform();
+    };
+
+    // Initial fit
+    canvasFit();
+})();
+</script>
+{{end}}

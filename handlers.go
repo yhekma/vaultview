@@ -43,13 +43,25 @@ func (a *app) handleView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Add .md extension if not present
-	mdPath := clean
-	if !strings.HasSuffix(mdPath, ".md") {
-		mdPath += ".md"
+	// Try .canvas first, then .md, then as-is
+	var fullPath string
+	var fileExt string
+	for _, ext := range []string{".canvas", ".md"} {
+		candidate := clean
+		if !strings.HasSuffix(candidate, ext) {
+			candidate += ext
+		}
+		fp := filepath.Join(a.vaultRoot, candidate)
+		if _, err := os.Stat(fp); err == nil {
+			fullPath = fp
+			fileExt = ext
+			break
+		}
 	}
-
-	fullPath := filepath.Join(a.vaultRoot, mdPath)
+	if fullPath == "" {
+		http.NotFound(w, r)
+		return
+	}
 
 	// Verify the resolved path is within the vault
 	resolved, err := filepath.Abs(fullPath)
@@ -64,6 +76,11 @@ func (a *app) handleView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if fileExt == ".canvas" {
+		a.handleCanvasView(w, clean, source)
+		return
+	}
+
 	result, err := renderMarkdown(a.md, source)
 	if err != nil {
 		http.Error(w, "failed to render markdown", http.StatusInternalServerError)
@@ -72,7 +89,7 @@ func (a *app) handleView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Derive title from filename
-	title := strings.TrimSuffix(filepath.Base(mdPath), ".md")
+	title := strings.TrimSuffix(filepath.Base(clean), ".md")
 
 	data := map[string]interface{}{
 		"Title":       title,
@@ -82,6 +99,25 @@ func (a *app) handleView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.render(w, "note.html", data)
+}
+
+func (a *app) handleCanvasView(w http.ResponseWriter, cleanPath string, source []byte) {
+	// Validate it's proper JSON
+	var raw json.RawMessage
+	if err := json.Unmarshal(source, &raw); err != nil {
+		http.Error(w, "invalid canvas file", http.StatusBadRequest)
+		return
+	}
+
+	title := strings.TrimSuffix(filepath.Base(cleanPath), ".canvas")
+
+	data := map[string]interface{}{
+		"Title":      title,
+		"VaultName":  a.vaultName,
+		"CanvasJSON": string(raw),
+	}
+
+	a.render(w, "canvas.html", data)
 }
 
 func (a *app) handleRaw(w http.ResponseWriter, r *http.Request) {

@@ -35,7 +35,8 @@ var includedExts = map[string]bool{
 	".mp3":  true,
 	".mp4":  true,
 	".webm": true,
-	".csv":  true,
+	".csv":    true,
+	".canvas": true,
 }
 
 // buildTree scans the vault directory and returns a tree of nodes.
