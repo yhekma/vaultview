@@ -46,7 +46,7 @@ func (a *app) handleView(w http.ResponseWriter, r *http.Request) {
 	// Try .canvas first, then .md, then as-is
 	var fullPath string
 	var fileExt string
-	for _, ext := range []string{".canvas", ".md"} {
+	for _, ext := range []string{".md", ".canvas"} {
 		candidate := clean
 		if !strings.HasSuffix(candidate, ext) {
 			candidate += ext
