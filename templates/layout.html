@@ -66,15 +66,9 @@
     // Theme toggle
     function toggleTheme() {
         var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (isDark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('vaultview-theme', 'light');
-            document.getElementById('theme-icon').innerHTML = '&#9790;';
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('vaultview-theme', 'dark');
-            document.getElementById('theme-icon').innerHTML = '&#9788;';
-        }
+        localStorage.setItem('vaultview-theme', isDark ? 'light' : 'dark');
+        // Reload so mermaid re-initializes with the correct theme
+        location.reload();
     }
     // Set icon on load
     (function() {
@@ -103,7 +97,17 @@
                 const toggle = document.createElement('div');
                 toggle.className = 'tree-toggle flex items-center gap-1 px-2 py-1 rounded cursor-pointer';
                 toggle.style.paddingLeft = (depth * 12 + 8) + 'px';
-                toggle.innerHTML = '<span class="tree-arrow text-xs transition-transform">&#9654;</span><span>&#128193;</span><span class="truncate">' + node.name + '</span>';
+                const arrow = document.createElement('span');
+                arrow.className = 'tree-arrow text-xs transition-transform';
+                arrow.innerHTML = '&#9654;';
+                const icon = document.createElement('span');
+                icon.innerHTML = '&#128193;';
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'truncate';
+                nameSpan.textContent = node.name;
+                toggle.appendChild(arrow);
+                toggle.appendChild(icon);
+                toggle.appendChild(nameSpan);
 
                 const children = document.createElement('div');
                 children.className = 'hidden';
@@ -126,7 +130,10 @@
                 link.style.paddingLeft = (depth * 12 + 8) + 'px';
                 link.dataset.name = node.name.toLowerCase();
                 const displayName = node.name.replace(/\.(md|canvas)$/, '');
-                link.innerHTML = '<span class="truncate">' + displayName + '</span>';
+                const fileNameSpan = document.createElement('span');
+                fileNameSpan.className = 'truncate';
+                fileNameSpan.textContent = displayName;
+                link.appendChild(fileNameSpan);
                 parent.appendChild(link);
             }
         }
